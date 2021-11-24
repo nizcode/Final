@@ -1,0 +1,116 @@
+---
+title: "Final Project"
+author: "Neil Farrugia 17336831"
+date: "14/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+df <- read.csv("winemag-data-130k-v2.csv")
+nas <- apply(apply(df, 2, is.na),2,sum)
+
+barplot(nas,main="Missing values investigation",
+        ylab="num of NAs",las=2)
+
+
+on <- dim(df)[1]
+vn <- dim(df)[2]
+sum <- c("n observation"=on, "n variables" = vn)
+print(sum)
+
+
+```
+
+From this brief missing values exploration, we can see that there is only 1 column that contains missing values - points column. With just over 8000 missing values.
+
+The total number of observation is `r on` and the total number of variables is `r vn`.
+
+Due to the fact that there is a high number of observation in this data set, completely ommitting the rows with a missing price will still allow plenty of data points to draw conclusions from.
+
+```{r}
+df1 <- df[complete.cases(df),]
+```
+```{r}
+
+#
+#lvl <- sort(unique(df1$points))
+#df1$points <- factor(df1$points, levels = lvl)
+#tabPo <- table(df1$price)
+tabdf <- data.frame(table(df1$points))
+tabdf <- tabdf[order(tabdf$Var1),]
+avg <- factor(ceiling(sum(80:100*tabdf$Freq)/sum(tabdf$Freq)))
+mode <- tabdf$Var1[which(tabdf$Freq==max(tabdf$Freq))]
+median <- factor(median(80:100))
+colors <- c("mean" = "blue", "mode" = "red", "median" = "orange")
+ggplot(tabdf,aes(x=Var1,y=Freq))+
+  geom_histogram(stat='identity')+
+  geom_vline(aes(xintercept = mode,color="mode"))+
+  geom_vline(aes(xintercept = avg,color="mean"))+
+  geom_vline(aes(xintercept = median,color="median"))+
+  labs(title="Distribution of points",
+         y = "Points",
+         color = "Legend") +
+ scale_color_manual(values = colors)
+
+
+avgP <- mean(df1$price)
+modeP <- mode(df1$price)
+medianP <- median(df1$price) 
+sumP <- c("mean Price" = avgP, "median Price" = medianP, "mode Price", modeP)
+
+
+#bin = 10
+#df1$price<-cut(df1$price,seq(0,max(df1$price),bin))
+#price <- table(df1$price)
+#price <- data.frame(price[c(1:(1000/bin))])
+ggplot(df1,aes(x = factor(1),y=log(price)))+
+  geom_boxplot(fill = "red")+
+  labs(title="Distribution of the log of Prices",
+         y = "log(Price)", x = NULL) +
+  annotate("text",label = paste("mean=",round(avgP,2)), x=1.3, y=4)
+    #scale_color_manual(values = colors)+
+    #theme(axis.ticks.x = element_blank(),axis.text.x = element_blank())
+
+    
+```
+I have done a quick analysis on the distribution of points and prices.
+The prices follow nicely a normal distribution, with the mean, median and mode only closely related.
+The points however is extremely right skewed with a range of prices of  `r range(df1$price)` and a mean of `r avgP`. Therefore a boxplot on the log scale of the prices were performed instead to get a better view of the distribution of the prices.
+
+```{r}
+ggplot(df1,aes(x=points,y=price))+
+  geom_point()
+  
+
+```
+```{r}
+df1$pgrp<-cut(df1$points,c(80,87,93,100),labels = c('low','medium','high'))
+pvc <- table(data.frame(df1$country,df1$pgrp))
+pvc <- addmargins(pvc)
+pvcH <- data.frame(pvc[,'high']/pvc[,'Sum'])
+pvcH$country<-rownames(pvcH)
+colnames(pvcH)[1] <- "highPerc"
+
+library(maps)
+library(gapminder)
+library(countrycode)
+#library(countrycode,lib.loc = "/home/neilfa/R/x86_64-pc-linux-gnu-library/4.1")
+world_map <- map_data("world")
+wine_map <- left_join(pvcH, mosaicData::Countries, 
+                           by = c("country" = "gapminder"))
+wine_map <- left_join(wine_map, world_map, by = c("maps" = "region"))
+
+as.factor(wine_map$country) %>% levels()
+ggplot(wine_map, aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = highPerc), color = "white") +
+  scale_fill_viridis_c(option = "C")
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
