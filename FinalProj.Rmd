@@ -11,8 +11,12 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r}
+#https://www.kaggle.com/natashasavc/ie-students-winemag-analysis
+#another idea is to look at the years!
+#ie. year and price/points
 library(tidyverse)
 library(ggplot2)
+library(tokenizers)
 df <- read.csv("winemag-data-130k-v2.csv")
 nas <- apply(apply(df, 2, is.na),2,sum)
 
@@ -37,39 +41,99 @@ Due to the fact that there is a high number of observation in this data set, com
 ```{r}
 df1 <- df[complete.cases(df),]
 ```
+
+```{r}
+#range of the prices
+summary(df1$price)
+#Interqurtile range
+
+#percentage under $200/250
+
+tp <- table(df1$price)
+p99 <- ceiling(length(df1$price)*0.995)
+rngp99 <-(p99-20):(p99+20)
+#tp99 <- tp[1:p99]
+tpRS <- cumsum(tp)
+pless <- tp[which(tpRS%in%rngp99)]
+plessLabel <- labels(pless[length(pless)])
+
+print(paste0("$1 to $",plessLabel," covers 99.5% of the total dataset"))
+```
+
+
+As you can see from the calculations above there is a really big range of prices. Due to the fact that under 99.5% of the wines in this data set are below $225, anything above 225 will be removed. Removing these outliers will allow for a better a visualisations of the analysis and distributions.
+
+```{r}
+df1 <- df1[which(df1$price < as.numeric(plessLabel)),]
+
+```
+
+
 ```{r}
 
 #
 #lvl <- sort(unique(df1$points))
 #df1$points <- factor(df1$points, levels = lvl)
 #tabPo <- table(df1$price)
+
 tabdf <- data.frame(table(df1$points))
 tabdf <- tabdf[order(tabdf$Var1),]
-avg <- factor(ceiling(sum(80:100*tabdf$Freq)/sum(tabdf$Freq)))
-mode <- tabdf$Var1[which(tabdf$Freq==max(tabdf$Freq))]
-median <- factor(median(80:100))
-colors <- c("mean" = "blue", "mode" = "red", "median" = "orange")
-ggplot(tabdf,aes(x=Var1,y=Freq))+
-  geom_histogram(stat='identity')+
-  geom_vline(aes(xintercept = mode,color="mode"))+
+avg <- mean(df1$points)
+#mode <- tabdf$Var1[which(tabdf$Freq==max(tabdf$Freq))]
+median <- median(80:100)
+colors <- c("mean" = "green", "median" = "orange")
+#colors <- c("mean" = "blue", "mode" = "red", "median" = "orange")
+ggplot(df1,aes(x=points))+
+  geom_histogram(binwidth = 1,aes(y=..density..))+
+  #geom_vline(aes(xintercept = mode,color="mode"))+
   geom_vline(aes(xintercept = avg,color="mean"))+
   geom_vline(aes(xintercept = median,color="median"))+
   labs(title="Distribution of points",
-         y = "Points",
          color = "Legend") +
+ stat_function(fun=dnorm, args = list(mean = mean(df1$points), sd= sd(df1$points)), col = 'blue')+
  scale_color_manual(values = colors)
 
+#ggplot(tabdf,aes(x=Var1,y=Freq))+
+ # geom_histogram(stat='identity')+
+#  geom_vline(aes(xintercept = mode,color="mode"))+
+#  geom_vline(aes(xintercept = avg,color="mean"))+
+#  geom_vline(aes(xintercept = median,color="median"))+
+#  labs(title="Distribution of points",
+#         y = "Points",
+#         color = "Legend") +
+# #stat_function(fun=dnorm, args = list(mean = mean(df1$points), sd= sd(df1$points)), col = 'blue')+
+# scale_color_manual(values = colors)
+#
 
 avgP <- mean(df1$price)
-modeP <- mode(df1$price)
+#modeP <- mode(df1$price)
 medianP <- median(df1$price) 
-sumP <- c("mean Price" = avgP, "median Price" = medianP, "mode Price", modeP)
+sumP <- c("mean Price" = avgP, "median Price" = medianP)
 
 
 #bin = 10
 #df1$price<-cut(df1$price,seq(0,max(df1$price),bin))
 #price <- table(df1$price)
 #price <- data.frame(price[c(1:(1000/bin))])
+
+#look at wine prices, for different countries
+#only look at top 10 countries with most wines
+#only max 200euro
+ctab <- sort(table(df1$country), decreasing = T)
+ctab10 <- labels(ctab[1:10])[[1]]
+df10 <- df1[which(df1$country%in%ctab10),]
+ggplot(df1,aes(x=price))+
+  geom_histogram(binwidth = 5,aes(y=..density..))+
+  #geom_vline(aes(xintercept = mode,color="mode"))+
+  geom_vline(aes(xintercept = avgP,color="mean"))+
+  geom_vline(aes(xintercept = medianP,color="median"))+
+  labs(title="Distribution of prices",
+         color = "Legend") +
+ stat_function(fun=dnorm, args = list(mean = mean(df1$price), sd= sd(df1$price)), col = 'blue')+
+ scale_color_manual(values = colors)
+
+
+
 ggplot(df1,aes(x = factor(1),y=log(price)))+
   geom_boxplot(fill = "red")+
   labs(title="Distribution of the log of Prices",
@@ -80,13 +144,26 @@ ggplot(df1,aes(x = factor(1),y=log(price)))+
 
     
 ```
-I have done a quick analysis on the distribution of points and prices.
-The prices follow nicely a normal distribution, with the mean, median and mode only closely related.
-The points however is extremely right skewed with a range of prices of  `r range(df1$price)` and a mean of `r avgP`. Therefore a boxplot on the log scale of the prices were performed instead to get a better view of the distribution of the prices.
+It was interesting to note the distribution of prices and points.
+As you can see the points follow a normal distribution. Where as the prices the distrubtion is very much squewed to the right.
 
 ```{r}
+ggplot(df1,aes(x = factor(1),y=log(price)))+
+  geom_boxplot(fill = "red")+
+  labs(title="Distribution of the log of Prices",
+         y = "log(Price)", x = NULL) +
+  annotate("text",label = paste("mean=",round(avgP,2)), x=1.3, y=4)
+
+
+```
+
+
+```{r}
+#maybe look at price in different categories?
 ggplot(df1,aes(x=points,y=price))+
-  geom_point()
+  
+  geom_point(position="jitter", alpha=1/10) + 
+  geom_smooth(method="lm", se=F)
   
 
 ```
