@@ -20,3 +20,16 @@ as.factor(wine_map$country) %>% levels()
 ggplot(wine_map, aes(x = long, y = lat, group = group)) +
   geom_polygon(aes(fill = highPerc), color = "white") +
   scale_fill_viridis_c(option = "C")
+
+#--------
+pG <- ggplot(wdsG[1:100,],
+             aes(label=wG,color = factor(sample.int(10, 100, replace = TRUE)),size=Freq))+
+  geom_text_wordcloud() +
+  labs(title = "Word Cloud for Best")+
+  theme_minimal()
+
+pB <- ggplot(wdsB[1:100,],
+             aes(label=wB,color = factor(sample.int(10, 100, replace = TRUE)),size=Freq))+
+  geom_text_wordcloud() +
+  labs(title = "Word Cloud for Worst")+
+  theme_minimal()  

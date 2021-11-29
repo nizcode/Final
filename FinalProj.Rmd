@@ -201,7 +201,72 @@ print(paste("Correlation coefficient=",round(cor(df10$points,df10$price),2)))
 ```
 The correlation is positive, and it is of medium strength.
 
+```{r}
+#https://cran.r-project.org/web/packages/tokenizers/vignettes/introduction-to-tokenizers.html
+library(stopwords)
+library(ggwordcloud)
+df3 <- df1[1:1000,]
+#str_split(df3$description," ")
+rev <- df1$description
+obviousWords <- c("wine","flavors","now","nose","well","show","like","aroma","drink","body","offer","vineyard","sauvignon","open","mouth","blanc","cabernet")
+stopwords = c(stopwords::stopwords("en"),tolower(df3$variety),df3$province,df3$country,obviousWords)
+#wds <- unlist(tokenize_ngrams(rev,n=2,n_min=1,stopwords=stopwords))
+wds <- unlist(tokenize_word_stems(rev,stopwords=stopwords))
+wdsdf <- data.frame(sort(table(wds),decreasing=T))
+ggplot(wdsdf[1:100,],
+       aes(label=wds,color = factor(sample.int(10, 100, replace = TRUE)),size=Freq))+
+  geom_text_wordcloud() +
+  labs(title = "Word Cloud for dataset")
+  theme_minimal()
+  
+#grepl("Red",df3$variety)
+  
+```
+
+```{r}
+#split top 10% wines and bottom 10% wines
+library(gridExtra)
+
+dfG <- df1[which(df1$points>96),]
+dfB <- df1[which(df1$points<81),]
+
+revG <- dfG$description
+revB <- dfB$description
+obviousWords <- c("wine","flavors","now","nose","well","show","like","aroma","drink","body","offer","vineyard","sauvignon","open","mouth","blanc","cabernet")
+stopwords = c(stopwords::stopwords("en"),tolower(df3$variety),df3$province,df3$country,obviousWords)
+#wds <- unlist(tokenize_ngrams(rev,n=2,n_min=1,stopwords=stopwords))
+wG<-unlist(tokenize_word_stems(revG,stopwords=stopwords))
+wB <- unlist(tokenize_word_stems(revB,stopwords=stopwords))
+wdsG <- data.frame(sort(table(wG),decreasing = T))
+wdsB <- data.frame(sort(table(wB),decreasing = T))
+
+Gp <- ggplot(wdsG[1:30,],
+       aes(x=wG, y=Freq,fill=wG))+
+  geom_bar(stat="identity") +
+  guides(fill = F)+
+  xlab(NULL)+
+  coord_flip()+
+  labs(title = "Bar Chart for Best")+
+  theme_minimal()
+Bp <- ggplot(wdsB[1:30,],
+       aes(x=wB, y=Freq,fill=wB))+
+  geom_bar(stat="identity") +
+  xlab(NULL)+
+  guides(fill = F)+
+  coord_flip()+
+  labs(title = "Bar Chart for Worst")+
+  theme_minimal()
+grid.arrange(Bp,Gp,ncol=2)
 
 ```
+It was very interesting comparing the words used in the best wines in comparison to the worst wines (relative in the datset).
+
+When describing the worst wines, they seem to focus more on more general terms, fruit, taste, smell, bitter, cherry, aroma. However the words that are used to describe the best wines are more precise, more pronounced and more descriptive. Such as, rich, structure, beautiful, power, balanced, complex.
+
+Tannin which is top 2nd most frequent used in the best wines is not used in the worst wines. Tannin is a very important concept when it comes to wine in general. The fact that it is not used in describing ...........
+
+Moreover, the words age and year were used quite frequently when describing the best wines. Whereas it wasn't use much at all it seems in the worst wnes. Meaning that age of the wine (most likely how old it is) is an important factor when it comes to the quality of the best wines.
+``
+
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
