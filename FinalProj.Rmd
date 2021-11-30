@@ -52,7 +52,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #ie. year and price/points
 library(tidyverse)
 library(ggplot2)
-library(tokenizers)
+
 #read in the data
 df <- read.csv("winemag-data-130k-v2.csv")
 nas <- apply(apply(df, 2, is.na),2,sum)
@@ -205,6 +205,7 @@ The correlation is positive, and it is of medium strength.
 #https://cran.r-project.org/web/packages/tokenizers/vignettes/introduction-to-tokenizers.html
 library(stopwords)
 library(ggwordcloud)
+library(tokenizers)
 df3 <- df1[1:1000,]
 #str_split(df3$description," ")
 rev <- df1$description
@@ -216,7 +217,7 @@ wdsdf <- data.frame(sort(table(wds),decreasing=T))
 ggplot(wdsdf[1:100,],
        aes(label=wds,color = factor(sample.int(10, 100, replace = TRUE)),size=Freq))+
   geom_text_wordcloud() +
-  labs(title = "Word Cloud for dataset")
+  labs(title = "Word Cloud for dataset")+
   theme_minimal()
   
 #grepl("Red",df3$variety)
@@ -268,5 +269,55 @@ Tannin which is top 2nd most frequent used in the best wines is not used in the 
 Moreover, the words age and year were used quite frequently when describing the best wines. Whereas it wasn't use much at all it seems in the worst wnes. Meaning that age of the wine (most likely how old it is) is an important factor when it comes to the quality of the best wines.
 ``
 
+
+# Part 2
+## Tokenizer package analysis
+
+```{r}
+library(tidytext)
+library(dplyr)
+library(stopwords)
+library(tokenizers)
+df0 <- read.csv("wiki_movie_plots_deduped.csv")
+df0 <- df0[,c('Title','Genre','Plot')]
+
+startTy <- Sys.time()
+word_df1<-unnest_tokens(df0,word,Plot)%>%
+  anti_join(stop_words)%>%
+  count(word,sort=TRUE)
+endTy <- Sys.time()
+
+startTo <- Sys.time()
+word_df2<-tokenize_words(df0$Plot, stopwords = stopwords::stopwords("en"),strip_numeric = TRUE)
+word_df2<-data.frame(sort(table(word_df2),decreasing=TRUE))
+endTo <- Sys.time()
+
+
+
+
+print(paste("It took the tidytext package", round(endTy - startTy,2),"seconds","to perform tokenisation and a count of the tokens", "where the tokenizers package takes",round(endTo - startTo,2),"seconds"))
+```
+
+This shows the speed of the tokenizer package, yet it has some very useful add ons,that tidy tyext does not have.
+For example:
+You can tokenize group of words,
+tokenize_ngrams(words, n = 5, n_min = 2), grouping with at most n words and at least n_min words.
+```{r}
+dfc <- df0[grepl("romance",df0$Genre,fixed=TRUE),]
+
+word_df<-unlist(tokenize_ngrams(df0$Plot, n=2, n_min=2,stopwords = stopwords::stopwords("en")))#,strip_numeric = TRUE)
+word_df<-data.frame(sort(table(word_df),decreasing=TRUE))
+
+ggplot(word_df[1:20,],
+       aes(label=word_df,color = factor(sample.int(10, 20, replace = TRUE)),size=Freq))+
+  geom_text_wordcloud() +
+  labs(title = "Word Cloud for dataset")+
+  theme_minimal()
+
+
+
+
+```
+This analysis performed here using the ngram function proves exactly its usefulness. This is because imagine you solely analysed 1 word tokens, you may find a high number of "new" tokens and "york" possibly as well. These tokens went taken independtly are meaningless, it is only when you put them together that you can form some sort of conclusion, ie. a lot of romance movie happen in New York.
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
