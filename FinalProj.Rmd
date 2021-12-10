@@ -1,0 +1,478 @@
+---
+title: "Final Project"
+author: "Neil Farrugia 17336831"
+date: "14/11/2021"
+output: html_document
+---
+
+
+
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 12px;
+  }
+td {  /* Table  */
+  font-size: 8px;
+}
+h1.title {
+  font-size: 38px;
+  color: DarkRed;
+}
+h1 { /* Header 1 */
+  font-size: 28px;
+  color: DarkBlue;
+}
+h2 { /* Header 2 */
+    font-size: 22px;
+  color: DarkBlue;
+}
+h3 { /* Header 3 */
+  font-size: 18px;
+  font-family: "Times New Roman", Times, serif;
+  color: DarkBlue;
+}
+code.r{ /* Code block */
+    font-size: 12px;
+}
+pre { /* Code block - determines code spacing between lines */
+    font-size: 14px;
+}
+</style>
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Part 1: Analysis
+Write here
+## Reading in the data
+```{r}
+#data can be found here https://www.kaggle.com/natashasavc/ie-students-winemag-analysis
+
+#ie. year and price/points
+#Packages needed for this section
+library(tidyverse)
+library(ggplot2)
+
+#read in the data
+df <- read.csv("winemag-data-130k-v2.csv")
+nas <- apply(apply(df, 2, is.na),2,sum)
+#Quick visualization plot to find missing values
+barplot(nas,main="Missing values investigation",
+        ylab="num of NAs",las=2)
+
+#what are the dimensions
+on <- dim(df)[1]
+vn <- dim(df)[2]
+sum <- c("n observation"=on, "n variables" = vn)
+print(sum)
+
+
+```
+
+From this brief missing values exploration, we can see that there is only 1 column that contains missing values - points column. With just over 8000 missing values.\
+
+The total number of observation is `r on` and the total number of variables is `r vn`.\
+
+Due to the fact that there is a high number of observation in this data set, completely omitting the rows with a missing points will still allow plenty of data points to draw conclusions from.
+
+```{r}
+#removing all NA values
+df1 <- df[complete.cases(df),]
+```
+## Analysis on distrubition of prices and points
+### Data manipulation prior analyis
+
+
+```{r}
+#print Summary of prices
+summary(df1$price)
+```
+
+
+A brief a exploration of the data was preformed prior running the code below. Since the 3rd Quartile is 42 and the max is 3300. It seems that most wines are on the cheaper side and only very few are very expensive\
+\
+This big range, might squewe our analysis, and removing outliars might be the best option.
+
+
+
+```{r}
+
+
+#Hypothesis - Very few wines are above the $200/300 mark
+#These next few lines - finds the range of bottles at certain price that covers
+#99.5% of the data set, this number was chosen through trial and error
+tp <- table(df1$price)
+p99 <- ceiling(length(df1$price)*0.995)
+rngp99 <-(p99-20):(p99+20) #Give or take $20
+
+#cumulative sum function - to count up wines that are priced from 0th percentile
+#to the 99.5th percentile
+tpRS <- cumsum(tp)
+pless <- tp[which(tpRS%in%rngp99)]
+plessLabel <- labels(pless[length(pless)])
+
+print(paste0("$1 to $",plessLabel," covers 99.5% of the total dataset"))
+```
+
+
+As you can see from the calculations above there is a really big range of prices. Due to the fact that under 99.5% of the wines in this data set are below $225, anything above 225 will be removed. Removing these outliers will allow for a better a visualizations of the analysis and distributions.
+
+```{r}
+#revoming any wines which prices are above 225$ (99.5 percentile)
+df1 <- df1[which(df1$price < as.numeric(plessLabel)),]
+
+```
+
+### Analyis on prices and points of wines
+
+```{r}
+#Points and price analysis
+avg <- mean(df1$points)
+median <- median(80:100)
+
+#Colors for the graph
+colors <- c("mean" = "green", "median" = "orange")
+
+#grpahing distribution of points
+ggplot(df1,aes(x=points))+
+  geom_histogram(binwidth = 1,aes(y=..density..))+
+  #geom_vline(aes(xintercept = mode,color="mode"))+
+  geom_vline(aes(xintercept = avg,color="mean"))+
+  geom_vline(aes(xintercept = median,color="median"))+
+  labs(title="Distribution of points",
+         color = "Legend") +
+ stat_function(fun=dnorm, args = list(mean = mean(df1$points), sd= sd(df1$points)), col = 'blue')+
+ scale_color_manual(values = colors)
+
+#p dont need this
+#Summary of mean and median of price
+avgP <- mean(df1$price)
+#modeP <- mode(df1$price)
+medianP <- median(df1$price) 
+sumP <- c("mean Price" = avgP, "median Price" = medianP)
+
+#p dont neeed this
+#look at wine prices, for different countries
+#only look at top 10 countries with most wines in this dataset
+ctab <- sort(table(df1$country), decreasing = T)
+ctab10 <- labels(ctab[1:10])[[1]]
+df10 <- df1[which(df1$country%in%ctab10),]
+
+
+#Distribution of prices in the dataset
+ggplot(df1,aes(x=price))+
+  geom_histogram(binwidth = 5,aes(y=..density..))+
+  #geom_vline(aes(xintercept = mode,color="mode"))+
+  geom_vline(aes(xintercept = avgP,color="mean"))+
+  geom_vline(aes(xintercept = medianP,color="median"))+
+  labs(title="Distribution of prices",
+         color = "Legend") +
+ stat_function(fun=dnorm, args = list(mean = mean(df1$price), sd= sd(df1$price)), col = 'blue')+
+ scale_color_manual(values = colors)
+
+
+    
+```
+It was interesting to note the distribution of prices and points. They are both quite different from eachother.
+As you can see the points follow a normal distribution. Where as the prices the distribution is very much skewed to the right.
+
+
+
+
+```{r}
+#How many countries?
+length(unique(df1$country))
+
+```
+There are a total of 43 countries. For ease of visualization, only the eleven countries that have the most observations in the dataset will be used in this price analysis.
+
+```{r}
+#Selecting only the 11 countries with the most wines in the dataset
+topCon <- labels(sort(table(df1$country),decreasing = T)[1:11])[[1]]
+df102 <- df10[which(df10$country %in% topCon),] 
+topCon
+```
+These top 11 countries are also among st the top wine producing countries according to this website, https://worldpopulationreview.com/country-rankings/wine-producing-countries\
+\
+### Analysis on the price of wine in these 11 countries:
+
+```{r}
+#why do I need this function
+avgPvC<-aggregate(df102$price,by=list(country=df102$country),FUN=mean)
+
+#box plot for the prices in different countries
+ggplot(df102,aes(x = country,y=price))+
+  geom_boxplot(fill = "red")+
+  labs(title="Distribution Prices per Country",
+         y = "Prices", x = "Country")
+  
+
+
+```
+
+ The conlclusions that can be drawn from these boxplot:\
+ 1. US,Italy,France,Germany and Italy all seem to produce more expensive wines in comparison to the others.\
+ 2. Chile has the least amount of variance and also produces the cheapest wines, with Argentina not far off.\
+ 3. Italy has the biggest range of prices.\
+ 4. Spain and Portugal are very similar\
+ \
+### Analysis on the correlation between price and points
+
+```{r}
+# correlation graph
+#Because points is ordinal data - 
+#"jitter" is used to in order to better visualize the trend
+ggplot(df10,aes(x=points,y=price))+
+  geom_point(position="jitter",color = "purple") + 
+  geom_smooth(method="lm", se=F)+
+  labs(title = "Price vs Points")
+  
+print(paste("Correlation coefficient=",round(cor(df10$points,df10$price),2)))
+```
+We can see that there is definitely an uptrend from the graph, altough it isn't very strong.\ 
+This is also confirmed by the correlation coefficient, which can summarised as positive with medium strength.
+
+
+## Text analysis on wine descriptions
+This dataset also provided wine description for each wine. Having studied wine and also knowing that describing wine uses powerful adjectives to appeal to our sense of taste and smell, analysing the specific words used could be very interesting.\
+For this analysis 3 packages will be used, they have not been covered in the course.\
+Tokenizers is a package that converts text data into tokens. Which is usually the first step to text processing and natural language processing too.\
+The process of tokenzing is essential for analysis of the wine descriptive data. It would then allow the process of counting up the oncurrences of each of word. Moreover with this package, it allows you to provide a stopword list. This is a list of words that you don't want to include in the process of tokenization. The stopword package, therefore, provides a list of most frequent words in the english language that are usually of no benefit to analysis like these ones. Words for example, "the" and "and". \
+Ggworld packages works hand in hand with ggplot. It helps produce a wordcloud, a useful way to visualize word frequency data. It plots words, and the size of each word is propotional to the frequency of occurences\
+\
+For this first analysis the most frequent words of the dataset is plotted on a wordcloud
+
+```{r}
+#https://cran.r-project.org/web/packages/tokenizers/vignettes/introduction-to-tokenizers.html
+#citation(tokenizers)
+#citation(ggwordcloud)
+#citation(stopwords)
+library(stopwords)
+library(tokenizers)
+library(ggwordcloud)
+#df3 <- df1[1:1000,]
+#str_split(df3$description," ")
+#isolate the description of each wine
+rev <- df1$description
+
+#The list obviousWords was update regularly when a word was found that was not covered in the stopwword package and that carried to real use to the analysis
+obviousWords <- c("wine","flavors","now","nose","well","show","like","aroma","drink","body","offer","vineyard","sauvignon","open","mouth","blanc","cabernet")
+
+#Also included any region/name of wines.
+#Only interested in descriptive wine words
+stopwords = c(stopwords::stopwords("en"),tolower(df3$variety),df3$province,df3$country,obviousWords)
+
+#The unlist function was used on the tockenized object as we are interested in the whole dataset not just the indvidual wines
+#The function table or count does not work on list
+#wds <- unlist(tokenize_ngrams(rev,n=2,n_min=1,stopwords=stopwords))
+wds <- unlist(tokenize_word_stems(rev,stopwords=stopwords))
+wdsdf <- data.frame(sort(table(wds),decreasing=T))
+
+#plotting a word cloud
+ggplot(wdsdf[1:100,],
+       aes(label=wds,color = factor(sample.int(10, 100, replace = TRUE)),size=Freq))+
+  geom_text_wordcloud() +
+  labs(title = "Word Cloud for dataset")+
+  theme_minimal()
+  
+#grepl("Red",df3$variety)
+  
+```
+
+Only the 100 most frequent words were plotted for better graphical aesthetics.\
+The most frequent words are ...\
+\
+Only this provides a nice overview of the token dataset, it probably isn't precise enough to draw acccuarate conclusions. A bar plot could be a nice alternative\
+\
+
+
+
+Next to take this one step further, we will be grouping the data into two groups, the best wines and the worst wines (relative to this dataset).\
+And then analyzing the words used to describe these two groups.\
+It will be interesting to investgate whether different words are used. Whether you can tell if a wine scored highly solely by looking at the descriptioin of the wine.
+
+
+```{r}
+#This package allows the graph to be put side by side, for ease comparison
+library(gridExtra)
+
+#After trial an error using the best wines (points >96) and worst wines (points<81), provided a big enough gap between the two and provided similar number of wines in each group
+dfG <- df1[which(df1$points>96),]
+dfB <- df1[which(df1$points<81),]
+
+#Same process as before
+revG <- dfG$description
+revB <- dfB$description
+obviousWords <- c("wine","flavors","now","nose","well","show","like","aroma","drink","body","offer","vineyard","sauvignon","open","mouth","blanc","cabernet")
+stopwords = c(stopwords::stopwords("en"),tolower(df3$variety),df3$province,df3$country,obviousWords)
+#wds <- unlist(tokenize_ngrams(rev,n=2,n_min=1,stopwords=stopwords))
+wG<-unlist(tokenize_word_stems(revG,stopwords=stopwords))
+wB <- unlist(tokenize_word_stems(revB,stopwords=stopwords))
+wdsG <- data.frame(sort(table(wG),decreasing = T))
+wdsB <- data.frame(sort(table(wB),decreasing = T))
+
+#Storing plots in variable in order to use grid.arrange
+#Bar plot will be used to more accurately view the frequency of each word
+#Only the top 30 words are used for ease of visualization
+Gp <- ggplot(wdsG[1:30,],
+       aes(x=wG, y=Freq,fill=wG))+
+  geom_bar(stat="identity") +
+  guides(fill = F)+
+  xlab(NULL)+
+  coord_flip()+
+  labs(title = "Bar Chart for Best")+
+  theme_minimal()
+Bp <- ggplot(wdsB[1:30,],
+       aes(x=wB, y=Freq,fill=wB))+
+  geom_bar(stat="identity") +
+  xlab(NULL)+
+  guides(fill = F)+
+  coord_flip()+
+  labs(title = "Bar Chart for Worst")+
+  theme_minimal()
+
+grid.arrange(Bp,Gp,ncol=2)
+
+```
+It was very interesting comparing the words used in the best wines in comparison to the worst wines (relative in the datset).
+
+When describing the worst wines, they seem to focus more on more general terms, fruit, taste, smell, bitter, cherry, aroma. However the words that are used to describe the best wines are more precise, more pronounced and more descriptive. Such as, rich, structure, beautiful, power, balanced, complex.
+
+Tannin which is top 2nd most frequent used in the best wines is not used in the worst wines. Tannin is a very important concept when it comes to wine in general. The fact that it is not used in describing ...........
+
+Moreover, the words age and year were used quite frequently when describing the best wines. Whereas it wasn't use much at all it seems in the worst wnes. Meaning that age of the wine (most likely how old it is) is an important factor when it comes to the quality of the best wines.
+
+```{r}
+
+
+
+
+```
+
+
+
+# Part 2
+## Tokenizer package analysis
+
+I was very intrigued and intereste.
+
+```{r}
+library(tidytext)
+library(tidyverse)
+library(stopwords)
+library(tokenizers)
+citation("tokenizers")
+df0 <- read.csv("wiki_movie_plots_deduped.csv")
+df0 <- df0[,c('Title','Genre','Plot')]
+
+startTy <- Sys.time()
+word_df1<-unnest_tokens(df0,word,Plot)%>%
+  anti_join(stop_words)%>%
+  count(word,sort=TRUE)
+endTy <- Sys.time()
+
+startTo <- Sys.time()
+word_df2<-tokenize_words(df0$Plot, stopwords = stopwords::stopwords("en"),strip_numeric = TRUE)
+word_df2<-data.frame(sort(table(word_df2),decreasing=TRUE))
+endTo <- Sys.time()
+
+
+
+
+print(paste("It took the tidytext package", round(endTy - startTy,2),"seconds","to perform tokenisation and a count of the tokens", "where the tokenizers package takes",round(endTo - startTo,2),"seconds"))
+```
+
+This shows the speed of the tokenizer package, yet it has some very useful add ons,that tidy tyext does not have.
+For example:
+You can tokenize group of words,
+tokenize_ngrams(words, n = 5, n_min = 2), grouping with at most n words and at least n_min words.
+```{r}
+dfc <- df0[grepl("romance",df0$Genre,fixed=TRUE),]
+
+word_df<-unlist(tokenize_ngrams(df0$Plot, n=2, n_min=2,stopwords = stopwords::stopwords("en")))#,strip_numeric = TRUE)
+word_df<-data.frame(sort(table(word_df),decreasing=TRUE))
+
+ggplot(word_df[1:20,],
+       aes(label=word_df,color = factor(sample.int(10, 20, replace = TRUE)),size=Freq))+
+  geom_text_wordcloud() +
+  labs(title = "Word Cloud for dataset")+
+  theme_minimal()
+
+
+
+
+```
+This analysis performed here using the ngram function proves exactly its usefulness. This is because imagine you solely analysed 1 word tokens, you may find a high number of "new" tokens and "york" possibly as well. These tokens went taken independtly are meaningless, it is only when you put them together that you can form some sort of conclusion, ie. a lot of romance movie happen in New York.
+
+### Tokenizing Tweets
+
+Interestingly the package also provides a useful function specialised for analysis tweets. Usually the tokenize_words function preserve only the word and ignores and symbol attached to it, such as fullstops, commas or in the case of tweets hashtags. Therefore what this function does, it preserves the hashtag or the "@" symbol. This means #rstudio and rstudio are treated as different tokens alltogether.
+
+
+### Tweet Analysis
+
+In order to showcase this function a new dataset is loaded containing 1600000 tweets (https://www.kaggle.com/kazanova/sentiment140). The exact information about this dataset was unable to be found. However only the dates and the tweets are of importance, as it is only being used to showcase the tokenise_tweets function and show why it is useful.
+
+
+
+```{r}
+library(stringi)#next time cheeck if this package is needed
+df0 <- read.csv("~/training.1600000.processed.noemoticon.csv")
+l1 <- df0[1:100000,c(3,6)]#Want to keep the dates and the tweets
+#For computer power reasons only looking at 100 thousands tweets
+names(l1)<-c("fulldate","tweet")
+l1$day<-str_extract(l1$fulldate, regex("[\\w]{3}\\s[\\w]{3}\\s[\\d]{2}"))#interested to look at the day
+l1$year<-str_extract(l1$fulldate,regex("[\\d]{4}"))
+
+
+
+
+#df2 <- data.frame(l1)
+words<-tokenize_tweets(l1$tweet)
+#l1 <- cbind(l1,words)
+word_df<-data.frame(sort(table(unlist(words)),decreasing=TRUE))
+names(word_df)<-c("word","Freq")
+
+dfH <- word_df[grepl("#",word_df$word,fixed=TRUE),]
+angle = 90 * sample(c(0, 1), dim(dfH)[1], replace = TRUE, prob = c(60, 40))
+dfH<-cbind(dfH,angle)
+ggplot(dfH[1:20,],
+       aes(label=word
+           ,color = factor(sample.int(10, 20, replace = TRUE)),size=Freq, angle = angle))+
+  geom_text_wordcloud() +
+  labs(title = "Word Cloud for dataset")+
+  theme_minimal()
+
+
+
+```
+This is the 20 most used hashtags, in the 100 thousands tweets of the dataset. #asot400 (and #ASOT400, tokenization is case sensitive) seemed to have been a popular hashtag, similar with #f1.\
+\
+To dive into a bit more so to complete this analysis. I want to uncover what is #asot400.\
+
+```{r}
+#start by doing a grep search and to find what dates this hashtag was used
+
+asot <- l1[c(grepl("#ASOT400",l1$tweet,fixed=TRUE),grepl("#asot400",l1$tweet,fixed=TRUE)),c("day","year")]
+
+days <- unique(asot[complete.cases(asot),"day"])
+tdays <-length(l1$day[which(l1$day%in%days)])
+year <- unique(asot[complete.cases(asot),"year"])
+print(paste("there were",length(asot),"from",tdays,
+            "(about",round((length(days)/tdays)*100,2),"percent)","tweets made on the days:"))
+print(paste(days,year))
+
+
+
+
+```
+The #asot400 was used on 3 consecutive days in 2009. After a quick Google search, it was found that ASOT stands for "a state of trance" a popular radio show which carried out a 72 hour broadcast from 17th to the 19th as a celebration for its 400th transmissions (https://www.astateoftrance.com/news/asot-400/). This analysis shows that the tweet tokenisation and in this case analysing the hashtags works very similarly to the "Trending" function on Twitter. "Trending" on Twitter analyses all tweets written and groups them into tweets that are "about" the same thing. If there are loads of tweets about the same subject in a small time frame then they appear on the "Trending" tab. In this case for simplicity and to explain the tokenenize_tweet function, it is easy to uncover the most used hashtags and thus find out what is "trending" based on the hashtags used.\
+\
+
+
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
