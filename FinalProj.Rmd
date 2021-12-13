@@ -473,6 +473,283 @@ The #asot400 was used on 3 consecutive days in 2009. After a quick Google search
 \
 
 
+### Part 3
+
+```{r}
+df <-read.csv("~/Masters/RProg/News_data/df_2020.csv")
+posw <- scan("~/Masters/RProg/lexicon/positive-words.txt",what="character",sep="\n")
+negw <- scan("~/Masters/RProg/lexicon/negative-words.txt",what="character",sep="\n")
+df1<-df[1:100,]
+
+test <- c("There has been a fire in the Great Hall, 10 people have died and 15 more seriously injured. It is not safe ppl's lungs with all the smoke. Not good for their health, keep away from the area for your own safety. Luckily 10 are safe and loads are good, loads are good")
+
+#ltok <- tokenize_words(df1$sentence, stopwords = stopwords::stopwords("en"))
+SPltok <- tokenize_words(test, stopwords = stopwords::stopwords("en"))
+ltok <- tokenize_words(test)
+test <- df$sentence[266]
+NGtok <- tokenize_ngrams(df$sentence, n= 2, n_min=1)
+v<-NGtok[[1]]
+
+Not <- c("not")
+
+score <- function(v){
+  #words <- list()
+  
+  #save pos and neg words in variable
+  pw <- v[which(v%in%posw)]
+  nw <- v[which(v%in%negw)]
+  
+  #What is done to a positve words is done in an oppposite way to negative words
+  #There could be false positive ie, not good, create a "not good" strings
+  NplusP <- v[which(v%in%paste(Not,pw,sep=" "))]
+  PplusN <- v[which(v%in%paste(Not,nw,sep=" "))]
+  
+  #are there any double positives if so delete them and add to negative list
+  
+  if (length(NplusP)>0){
+    dblNP <-unlist(strsplit(NplusP,split = " "))
+    dblNP <- dblNP[seq(2,length(dblNP),2)]#seq is "not, something, not, something etc"
+    
+    match <- table(pw[which(pw%in%dblNP )])
+    tab <- table(dblNP)
+    trueP <- match - tab
+    
+    pw <- c(pw[which(pw%in%dblNP==FALSE)],
+            rep(names(trueP)[which(trueP>0)],trueP[which(trueP>0)]))
+    #pw[which(pw%in%unlist(strsplit(NplusP,split = " ")))]
+    #pw <- pw[- which(pw%in%unlist(strsplit(NplusP,split = " ")))]
+    
+    nw <- c(nw, v[which(v%in%NplusP)])
+  }
+  if (length(PplusN)>0){
+    dbl <-unlist(strsplit(PplusN,split = " "))
+    dbl <- dbl[seq(2,length(dbl),2)]#seq is "not, something, not, something etc"
+    
+    
+    match2 <- table(nw[which(nw%in%dbl )])
+    tab2 <- table(dbl)
+    trueN <- match2 - tab2
+    
+    nw <- c(nw[which(nw%in%dbl==FALSE)],
+            rep(names(trueN)[which(trueN>0)],trueN[which(trueN>0)]))
+    
+    #nw <- nw[- which(nw%in%unlist(strsplit(PplusN,split = " ")))]
+    pw <- c(pw, v[which(v%in%PplusN)])
+  }
+  
+  num_pw <- length(pw)
+  num_nw <- length(nw)
+  
+  if (num_pw-num_nw >0){
+    score <- 1
+  }else if (num_pw-num_nw < 0){
+    score <- -1
+  }else{
+    score <- 0
+  }
+  
+  
+  result <- list("pos"=pw,"neg"=nw,"score"=score)
+  class(result) <- c("sentiment","summary")
+  
+  return(result)
+}
 
 
+score.sentiment <- function(lst){
+  return(score(lst)["score"])
+}
+score.summary <- function(lst){
+  return(score(lst))
+}
+
+print.sentiment <- function(lst){
+  if(lst["score"] ==1){
+    word <- "positive"
+  }else if(lst["score"] ==-1){
+    word <- "negative"
+  }else{
+    word <- "neutral"
+  }
+  cat("The sentiment for this text is ", word)
+}
+
+print(score(NGtok[[90]]))
+
+
+
+```
+
+
+
+```{r}
+NGtok <- tokenize_ngrams(df$sentence, n= 2, n_min=1)
+df$score <- unlist(sapply(NGtok,score.sentiment))
+class(df) <- "news"
+
+summary.news <- function(df){
+  year <- unique(df$year)
+  scores <- df$score[which(df$score!=0)]
+  avg <- mean(scores)
+  std <- sd(scores)
+  Npos <- length(scores[which(scores>0)])
+  Nneg <- length(scores[which(scores<0)])
+  Nneut <- length(df$score[which(scores==0)])
+  
+  cat("In ",year,"there was :","\n", 
+      Npos, "positive stories","\n",
+      Nneg, "negative stories", "\n",
+      "Mean sentiment score of:", avg, "\n",
+      "Standard deviation of ", std,"\n",
+      "----------------------","\n")
+ 
+ perc <- ((Npos-Nneg)/(Npos+Nneg))*100
+ 
+ if (Npos > Nneg){ 
+   cat("There was ",round(perc,2),"% ","more positive stories")
+   }else {
+   cat("There was ",round(perc*-1,2),"% ","more negative stories")
+   }  
+  
+}
+
+summary(df)
+
+
+```
+
+```{r}
+plot.news <- function(df){
+  year <- unique(df$year)
+  st <- sum(tab)
+  for (i in 1:3){
+    tab[i] <- round((tab[i]/st)*100,2)
+  }
+  names(tab) <- c("negative","neutral","positive")
+  labels <- c("positive"=1,"negative"=-1,"neutral"=0)
+  barplot(tab,
+      col = c("red","yellow","green"),
+      main = paste(year, "Bar Chart distribution of news sentiment"),#,
+      ylab = "Percentage")
+  lables <- c()
+  
+}
+
+plot(df)
+
+```
+
+```{sh}
+cat ~/Masters/RProg/News_data/test/*.csv > ~/Masters/RProg/News_data/test/test2.csv
+```
+
+```{r}
+library(doParallel)
+library(foreach)
+df <- read.csv("~/Masters/RProg/News_data/test/test2.csv")
+# Use the detectCores() function to find the number of cores in system
+#no_cores <- detectCores()
+# Setup cluster
+#clust <- makeCluster(no_cores) #This line will take time
+#Setting a base variable 
+#base <- 4
+#Note that this line is required so that all cores in cluster have this variable available
+#clusterExport(clust, "base")
+cores <- detectCores()
+cl <- makeCluster(2)#cores[1]/2) #not to overload your computer, cores = 8
+registerDoParallel(cl)
+#registerDoParallel(makeCluster(no_cores))
+sz <- length(df$sentence)
+#function that combines the tokenization and the sentiment scoring function
+parr <- function(text){
+  NGtok <- tokenize_ngrams(df$sentence, n= 2, n_min=1)
+  return(unlist(sapply(NGtok,score.sentiment)))
+}
+#df <-read.csv("~/Masters/RProg/News_data/test/test2.csv")
+sz <- length(df$sentence)
+mx <- foreach(i = seq(1,sz,sz/3), .combine = rbind)  %dopar%  
+  parr(df$sentence[i:i+1])
+s<-Sys.time()
+
+NGtok <- tokenize_ngrams(df$sentence, n= 2, n_min=1)
+df$score <- unlist(sapply(NGtok,score.sentiment))
+e<-Sys.time()
+
+t1<-s-e #it takes 16.5 min to do 10 years
+
+#Scoring the none neutral
+df0 <- df[which(df$score!=0),]
+df1 <- df[which(df$score==0),]
+
+#percentage differnce of positive to negative news, ie, -10% = 10% more bad news
+pdiff <- function(x){
+  return(round(mean(x)*100,2))
+}
+dfs <- aggregate(x= df$score, list(Year = df$year), pdiff)
+
+ggplot(dfs, aes(x = Year, y = x))+
+       geom_bar(stat="identity")
+
+```
+
+```{r}
+#load in consumer confidence index
+
+dfc <- read.csv("DP_LIVE_12122021173345665.csv")
+dfc <- dfc[which(dfc$LOCATION=="USA"),c("TIME","Value")]
+dfc$year <- gsub("-\\d+","",dfc$TIME)
+
+#gets the change in sentiment score from 1 year to the next
+diffr <- function(v){
+  return(range(v)[1]-range(v)[2])
+}
+diffm <- function(v){
+  return(v[length(v)]-v[1])
+}
+
+v <- dfc[dfc$year=="2020","Value"]
+range(t)
+#dfcs <- aggregate(x= dfc$Value, list(Year = dfc$year), sd)
+dfm <- aggregate(x= dfc$Value, list(Year = dfc$year), mean)
+dfr <- aggregate(x= dfc$Value, list(Year = dfc$year), diffr)
+
+dfm10<-dfm[51:61,]
+dfr<-dfr[51:61,]
+ggplot(dfs[51:61,], aes(x = Year, y = x))+
+       geom_bar(stat="identity")
+dfplot <- cbind(dfm10[,"x"],dfs[2:12,])
+names(dfplot) <- c("CII","Year","MSC")
+dfplotr <- cbind(dfr[,"x"],dfs[2:12,])
+names(dfplotr) <- c("CII","Year","MSC")
+
+
+LtoM <-colorRampPalette(c('red', 'yellow' ))
+Mid <- "snow3"
+MtoH <-colorRampPalette(c('lightgreen', 'darkgreen'))
+
+
+p1<-ggplot(dfplot, aes(x=Year,group=1,fill=MSC))+ #group=1 needed otherwise geom_line wont work
+  geom_bar(aes(y=MSC),stat="identity")+
+  #scale_fill_gradient(aes(y=MSC),low="blue", high="red")+#aes(fill=MSC),low=LtoM(100), mid='snow3', 
+       #high=MtoH(100), space='Lab')+
+  #scale_fill_gradientn(values = MSC,)
+  scale_fill_gradient(low="red", high="pink",guide = NULL)+
+  geom_line(aes(y=CII-100),color = "darkblue")+
+  scale_y_continuous(
+    name = "Mean News Sentiment Score",
+    sec.axis = sec_axis(~ ./3, name = "Mean Consumer Confidence Index"))+
+  ggtitle("Mean SC vs Mean CCI")
+    
+  
+p2<-ggplot(dfplotr, aes(x=Year,group=1,fill=MSC))+ #group=1 needed otherwise geom_line wont work
+  geom_bar(aes(y=MSC),stat="identity")+
+  scale_fill_gradient(low="red", high="pink",guide = NULL)+
+  geom_line(aes(y=CII),color = "darkblue")+
+  scale_y_continuous(
+    name = "Mean News Sentiment Score",
+    sec.axis = sec_axis(~ ./3, name = "Range difference of Consumer Confidence Index"))+
+  ggtitle("Mean SC vs Range of CII")
+grid.arrange(p1,p2,ncol=2)
+
+```
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
