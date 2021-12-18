@@ -2,7 +2,9 @@
 title: "Final Project"
 author: "Neil Farrugia 17336831"
 date: "14/11/2021"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 
@@ -46,15 +48,19 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Part 1: Analysis
-Write here
+The dataset that was chosen for this first of the analysis is on wine. \
+It can be found on kaggle using this link: https://www.kaggle.com/natashasavc/ie-students-winemag-analysis\
+We will be analysing the relationship between prices and quality of wines and also we will be looking at what makes a great wine.
+
+
 ## Reading in the data
 ```{r}
 #data can be found here https://www.kaggle.com/natashasavc/ie-students-winemag-analysis
 
 #ie. year and price/points
 #Packages needed for this section
-library(tidyverse)
 library(ggplot2)
+
 
 #read in the data
 df <- read.csv("winemag-data-130k-v2.csv")
@@ -76,15 +82,19 @@ From this brief missing values exploration, we can see that there is only 1 colu
 
 The total number of observation is `r on` and the total number of variables is `r vn`.\
 
-Due to the fact that there is a high number of observation in this data set, completely omitting the rows with a missing points will still allow plenty of data points to draw conclusions from.
+There is a high number of observation in this data set. Completely omitting rows with missing Points value will still allow plenty of data points to draw conclusions from.
 
 ```{r}
 #removing all NA values
 df1 <- df[complete.cases(df),]
 ```
 ## Analysis on distrubition of prices and points
-### Data manipulation prior analyis
+The Data contains some interesting variables, two will be focused on for this next section, which are the Prices and Points of the wine.\
+It is important to note that points were accredited by a random professional taster, which carries no bias when scoring the wines.
 
+### Data manipulation prior analysis
+
+ 
 
 ```{r}
 #print Summary of prices
@@ -92,9 +102,9 @@ summary(df1$price)
 ```
 
 
-A brief a exploration of the data was preformed prior running the code below. Since the 3rd Quartile is 42 and the max is 3300. It seems that most wines are on the cheaper side and only very few are very expensive\
+A brief a exploration of the data was preformed prior to running the code below. Since the 3rd Quartile is 42 and the max is 3300. It seems that most wines are on the cheaper side and only very few are very expensive\
 \
-This big range, might squewe our analysis, and removing outliars might be the best option.
+This big range, might skew our analysis, thus removing the outliers might be the best option.
 
 
 
@@ -114,11 +124,16 @@ tpRS <- cumsum(tp)
 pless <- tp[which(tpRS%in%rngp99)]
 plessLabel <- labels(pless[length(pless)])
 
+mostexp <- max(df1$price)
+
 print(paste0("$1 to $",plessLabel," covers 99.5% of the total dataset"))
 ```
 
 
-As you can see from the calculations above there is a really big range of prices. Due to the fact that under 99.5% of the wines in this data set are below $225, anything above 225 will be removed. Removing these outliers will allow for a better a visualizations of the analysis and distributions.
+The calculations show a big range of prices, with under 99.5% of the wines below $225 and the most expensive wine is `r mostexp` dollars.\
+Removing these outliers will allow for a better a visualizations of the analysis and distributions.\
+A better visualization of the data analysis and distribution can be achieved by removing outliers, so any wine with a price point less than 225 dollars or greater than 3300 dollars will be removed.  \
+
 
 ```{r}
 #revoming any wines which prices are above 225$ (99.5 percentile)
@@ -127,6 +142,8 @@ df1 <- df1[which(df1$price < as.numeric(plessLabel)),]
 ```
 
 ### Analyis on prices and points of wines
+Into the analysis part.\
+A distribution of prices and points will be plotted.
 
 ```{r}
 #Points and price analysis
@@ -176,10 +193,12 @@ ggplot(df1,aes(x=price))+
 
     
 ```
-It was interesting to note the distribution of prices and points. They are both quite different from eachother.
-As you can see the points follow a normal distribution. Where as the prices the distribution is very much skewed to the right.
-
-
+\
+\
+It is interesting to note the distribution of prices and points. They are both quite different from each other.
+As you can see the points follow a normal distribution, with 80 being the "worst" wine and 100 being the "best" wine. Where as the prices the distribution is highly skewed to the right, with most wines hovering around the mean and the median (35.36 and 25 respectively).
+\
+### Analysis on the price of wines in the top 11 countries:
 
 
 ```{r}
@@ -197,7 +216,8 @@ topCon
 ```
 These top 11 countries are also among st the top wine producing countries according to this website, https://worldpopulationreview.com/country-rankings/wine-producing-countries\
 \
-### Analysis on the price of wine in these 11 countries:
+
+### Plotting the price distrbutions for the countries
 
 ```{r}
 #why do I need this function
@@ -212,14 +232,16 @@ ggplot(df102,aes(x = country,y=price))+
 
 
 ```
-
- The conlclusions that can be drawn from these boxplot:\
+\
+ The conclusions that can be drawn from these boxplot are:\
  1. US,Italy,France,Germany and Italy all seem to produce more expensive wines in comparison to the others.\
- 2. Chile has the least amount of variance and also produces the cheapest wines, with Argentina not far off.\
+ 2. Chile has the least amount of variance and also produces the cheapest wines with Argentina not far off.\
  3. Italy has the biggest range of prices.\
  4. Spain and Portugal are very similar\
  \
+
 ### Analysis on the correlation between price and points
+In order to get a better understanding of the relationship between prices and quality of wine, a correlation graph will plotted with a regression line.\
 
 ```{r}
 # correlation graph
@@ -229,32 +251,38 @@ ggplot(df10,aes(x=points,y=price))+
   geom_point(position="jitter",color = "purple") + 
   geom_smooth(method="lm", se=F)+
   labs(title = "Price vs Points")
-  
-print(paste("Correlation coefficient=",round(cor(df10$points,df10$price),2)))
+
+rs <- summary(lm(price~points,data=df10))$r.squared
+print(paste("The coefficient of determination =",round(rs,2)))
+
 ```
-We can see that there is definitely an uptrend from the graph, altough it isn't very strong.\ 
-This is also confirmed by the correlation coefficient, which can summarised as positive with medium strength.
+\
+We can see that there is definitely an uptrend from the graph, although it isn't very strong.\ 
+This is also confirmed by the coefficient of determination which can be summarised as positive with weak/medium strength.\
+Intuitively this makes sense because there should be a degree of correlation between price and wine quality. Just like every products in life quality and price are linked. Yet the relation isn't overly strong meaning there must other factors at play that may contribute, for example, to great tasting cheaper wines or bad tasting expensive wines. Maybe a country like Chile, which has cheaper wines, must also produce great quality wines at a cheaper price in comparison to the US or France.
 
 
 ## Text analysis on wine descriptions
-This dataset also provided wine description for each wine. Having studied wine and also knowing that describing wine uses powerful adjectives to appeal to our sense of taste and smell, analysing the specific words used could be very interesting.\
+This dataset also provided a wine description for each wine. I have studied wine and know that powerful adjectives are used to describe wines that are designed to appeal to our sense of taste and smell. Hence, the analysis of the specific words used could be interesting.\
 For this analysis 3 packages will be used, they have not been covered in the course.\
-Tokenizers is a package that converts text data into tokens. Which is usually the first step to text processing and natural language processing too.\
-The process of tokenzing is essential for analysis of the wine descriptive data. It would then allow the process of counting up the oncurrences of each of word. Moreover with this package, it allows you to provide a stopword list. This is a list of words that you don't want to include in the process of tokenization. The stopword package, therefore, provides a list of most frequent words in the english language that are usually of no benefit to analysis like these ones. Words for example, "the" and "and". \
-Ggworld packages works hand in hand with ggplot. It helps produce a wordcloud, a useful way to visualize word frequency data. It plots words, and the size of each word is propotional to the frequency of occurences\
+Tokenizers is a package that converts text data into tokens. Which is usually the first step to text processing and natural language processing as well.\
+The process of tokenizing is essential for the analysis of the wine's descriptive data. It allows the process of counting up the ocurrences of each of word. Moreover this package, it allows you to provide a stopword list. This is a list of words that you want to exclude in the process of tokenization. The stopword package, therefore, provides a list of most frequent words in the english language that are usually of no benefit to analysis like these ones. Words for example, "the" and "and". \
+Ggworld packages works hand in hand with ggplot. It helps produce a wordcloud, a useful way to visualize word frequency data. It plots words, and the size of each word is propotional to the frequency of occurences.\
 \
-For this first analysis the most frequent words of the dataset is plotted on a wordcloud
-
 ```{r}
 #https://cran.r-project.org/web/packages/tokenizers/vignettes/introduction-to-tokenizers.html
-#citation(tokenizers)
-#citation(ggwordcloud)
-#citation(stopwords)
+
 library(stopwords)
 library(tokenizers)
 library(ggwordcloud)
-#df3 <- df1[1:1000,]
-#str_split(df3$description," ")
+citation("tokenizers")
+citation("ggwordcloud")
+citation("stopwords")
+
+```
+### Word cloud plot of most frequent words
+
+```{r}
 #isolate the description of each wine
 rev <- df1$description
 
@@ -263,12 +291,12 @@ obviousWords <- c("wine","flavors","now","nose","well","show","like","aroma","dr
 
 #Also included any region/name of wines.
 #Only interested in descriptive wine words
-stopwords = c(stopwords::stopwords("en"),tolower(df3$variety),df3$province,df3$country,obviousWords)
+stopwords = c(stopwords::stopwords("en"),tolower(df1$variety),df1$province,df1$country,obviousWords)
 
 #The unlist function was used on the tockenized object as we are interested in the whole dataset not just the indvidual wines
 #The function table or count does not work on list
 #wds <- unlist(tokenize_ngrams(rev,n=2,n_min=1,stopwords=stopwords))
-wds <- unlist(tokenize_word_stems(rev,stopwords=stopwords))
+wds <- unlist(tokenize_word_stems(rev,stopwords=stopwords))#note will take long to run
 wdsdf <- data.frame(sort(table(wds),decreasing=T))
 
 #plotting a word cloud
@@ -278,21 +306,21 @@ ggplot(wdsdf[1:100,],
   labs(title = "Word Cloud for dataset")+
   theme_minimal()
   
-#grepl("Red",df3$variety)
-  
+
 ```
-
-Only the 100 most frequent words were plotted for better graphical aesthetics.\
-The most frequent words are ...\
-\
-Only this provides a nice overview of the token dataset, it probably isn't precise enough to draw acccuarate conclusions. A bar plot could be a nice alternative\
 \
 
+100 of the most frequent words were plotted for better graphical aesthetics.\
+The most frequent words are fruit, palate, aroma, acid etc.\
+\
+This provides a nice overview of the token dataset, however it probably isn't precise enough to draw accurate conclusions.\
+\
 
 
+### Worst wines vs Best wines description
 Next to take this one step further, we will be grouping the data into two groups, the best wines and the worst wines (relative to this dataset).\
-And then analyzing the words used to describe these two groups.\
-It will be interesting to investgate whether different words are used. Whether you can tell if a wine scored highly solely by looking at the descriptioin of the wine.
+And then analyzing the words used to describe these two groups. This time using a bar chart, instead of a word cloud. \
+It will be interesting to investigate whether different words are used for the groups. Whether you can tell if a wine scored highly solely by looking at the description of the wine.
 
 
 ```{r}
@@ -307,7 +335,7 @@ dfB <- df1[which(df1$points<81),]
 revG <- dfG$description
 revB <- dfB$description
 obviousWords <- c("wine","flavors","now","nose","well","show","like","aroma","drink","body","offer","vineyard","sauvignon","open","mouth","blanc","cabernet")
-stopwords = c(stopwords::stopwords("en"),tolower(df3$variety),df3$province,df3$country,obviousWords)
+stopwords = c(stopwords::stopwords("en"),tolower(df1$variety),df1$province,df1$country,obviousWords)
 #wds <- unlist(tokenize_ngrams(rev,n=2,n_min=1,stopwords=stopwords))
 wG<-unlist(tokenize_word_stems(revG,stopwords=stopwords))
 wB <- unlist(tokenize_word_stems(revB,stopwords=stopwords))
@@ -337,45 +365,63 @@ Bp <- ggplot(wdsB[1:30,],
 grid.arrange(Bp,Gp,ncol=2)
 
 ```
+\
+Firstly it is important to note that there is more words in the "best" category, however we are interested in the most frequently used words in each group, and aren't comparing the actual word frequencies between groups.\
 It was very interesting comparing the words used in the best wines in comparison to the worst wines (relative in the datset).
 
-When describing the worst wines, they seem to focus more on more general terms, fruit, taste, smell, bitter, cherry, aroma. However the words that are used to describe the best wines are more precise, more pronounced and more descriptive. Such as, rich, structure, beautiful, power, balanced, complex.
+When describing the worst wines, they seem to focus more on more general terms, fruit, taste, smell, bitter, cherry, aroma. However the words that are used to describe the best wines are more precise, poetic and sophisticated. Such as, rich, structure, beautiful, power, balanced, complex.
 
-Tannin which is top 2nd most frequent used in the best wines is not used in the worst wines. Tannin is a very important concept when it comes to wine in general. The fact that it is not used in describing ...........
+Tannin which is top 2nd most frequent used word in the best wines is not used in the worst wines. Tannin is a very important concept when it comes to wine in general. Maybe tannins isn't as important for lesser quality wines but is essential for quality wines.
 
-Moreover, the words age and year were used quite frequently when describing the best wines. Whereas it wasn't use much at all it seems in the worst wnes. Meaning that age of the wine (most likely how old it is) is an important factor when it comes to the quality of the best wines.
+Moreover, the words age and year were used quite frequently when describing the best wines. Whereas it wasn't used much at all    in the worst wines. Meaning that the age of the wine (most likely how old it is) is an important factor when it comes to the quality of the best wines. This is also might link up with tannins because wine aging has a significant effect on the tannins of the wine. 
 
 ```{r}
-
-
-
-
+#clear memory
+rm(df1)
+rm(df)
+rm(df10)
+rm(df102)
+rm(wdsdf)
 ```
-
-
-
 # Part 2
 ## Tokenizer package analysis
 
-I was very intrigued and intereste.
+As a follow on from Part 1 the package that will be analyzed is tokenizers. Tokenizers' functions, as explained earlier, takes in a text of data and returns a vector of words from the text.
 
 ```{r}
 library(tidytext)
 library(tidyverse)
+library(ggplot2)
 library(stopwords)
 library(tokenizers)
 citation("tokenizers")
+```
+
+The dataset that will be used is from kaggle, and contains movie titles, their genre and their plots. We will be using the tokenizers' functions to examine in more detail the different movie genres.\
+Link to dataset - https://www.kaggle.com/jrobischon/wikipedia-movie-plots\
+\
+The first part to this analysis is to compare its speed to a similar function from the tidyverse packages called unnest_tokens.\
+
+```{r}
+
+#Read in the data
 df0 <- read.csv("wiki_movie_plots_deduped.csv")
 df0 <- df0[,c('Title','Genre','Plot')]
 
+#Time difference analysis from unest_tokens a tidyverse function
 startTy <- Sys.time()
-word_df1<-unnest_tokens(df0,word,Plot)%>%
+word_df1<-unnest_tokens(df0,word,Plot)%>% # unnest automatically has stop words
   anti_join(stop_words)%>%
-  count(word,sort=TRUE)
+  count(word,sort=TRUE) # count words function
 endTy <- Sys.time()
 
+#In order to get the same output as above, we must unlist the tokens
+#this is because toniz_words inputs is a list, indeces are the dataframe indeces
+#unnest_tokens output is a vector
+#table() used to count up
 startTo <- Sys.time()
-word_df2<-tokenize_words(df0$Plot, stopwords = stopwords::stopwords("en"),strip_numeric = TRUE)
+#need to specify the stop words
+word_df2<-unlist(tokenize_words(df0$Plot, stopwords = stopwords::stopwords("en"),strip_numeric = TRUE))
 word_df2<-data.frame(sort(table(word_df2),decreasing=TRUE))
 endTo <- Sys.time()
 
@@ -384,17 +430,19 @@ endTo <- Sys.time()
 
 print(paste("It took the tidytext package", round(endTy - startTy,2),"seconds","to perform tokenisation and a count of the tokens", "where the tokenizers package takes",round(endTo - startTo,2),"seconds"))
 ```
-
-This shows the speed of the tokenizer package, yet it has some very useful add ons,that tidy tyext does not have.
-For example:
-You can tokenize group of words,
-tokenize_ngrams(words, n = 5, n_min = 2), grouping with at most n words and at least n_min words.
+\
+This shows the speed of the tokenizer package. On top of this, it has other useful functions than the word tokenization, some which tidytext does not have.\
+For example:\
+You can tokenize group of words,\
+tokenize_ngrams(words, n = 5, n_min = 2), grouping with at most n words and at least n_min words.\
 ```{r}
+#isolate romace themded genre, need to use grepl as many types that isnt just romace, ie romance and comedy
 dfc <- df0[grepl("romance",df0$Genre,fixed=TRUE),]
 
 word_df<-unlist(tokenize_ngrams(df0$Plot, n=2, n_min=2,stopwords = stopwords::stopwords("en")))#,strip_numeric = TRUE)
 word_df<-data.frame(sort(table(word_df),decreasing=TRUE))
 
+#plotting a word cloud of the top 20 words
 ggplot(word_df[1:20,],
        aes(label=word_df,color = factor(sample.int(10, 20, replace = TRUE)),size=Freq))+
   geom_text_wordcloud() +
@@ -405,11 +453,12 @@ ggplot(word_df[1:20,],
 
 
 ```
-This analysis performed here using the ngram function proves exactly its usefulness. This is because imagine you solely analysed 1 word tokens, you may find a high number of "new" tokens and "york" possibly as well. These tokens went taken independtly are meaningless, it is only when you put them together that you can form some sort of conclusion, ie. a lot of romance movie happen in New York.
+\
+The analysis performed above using the ngram function is useful. for example, if you analysed 1 word tokens, you may find a high number of "new" tokens and "york" possibly as well. These tokens when taken independently are meaningless, it is only when you put them together that you can form some sort of conclusion, ie. a lot of romance movies happen in New York.
 
 ### Tokenizing Tweets
 
-Interestingly the package also provides a useful function specialised for analysis tweets. Usually the tokenize_words function preserve only the word and ignores and symbol attached to it, such as fullstops, commas or in the case of tweets hashtags. Therefore what this function does, it preserves the hashtag or the "@" symbol. This means #rstudio and rstudio are treated as different tokens alltogether.
+Interestingly the package also provides a useful function specialized in analysing tweets. Usually the tokenize_words function preserve only the word and ignores and symbol attached to it, such as full stops, commas or in the case of tweets, hashtags. Therefore this function preserves the hashtag and the "@" symbol too. This means #rstudio and rstudio are treated as different tokens.
 
 
 ### Tweet Analysis
@@ -419,10 +468,12 @@ In order to showcase this function a new dataset is loaded containing 1600000 tw
 
 
 ```{r}
-library(stringi)#next time cheeck if this package is needed
+library(stringi)#need this package in order to extract the day and the years
+#reading in the data
 df0 <- read.csv("~/training.1600000.processed.noemoticon.csv")
-l1 <- df0[1:100000,c(3,6)]#Want to keep the dates and the tweets
 #For computer power reasons only looking at 100 thousands tweets
+l1 <- df0[1:100000,c(3,6)]#Want to keep the dates and the tweets
+#renaming columns and adding a year and a day column
 names(l1)<-c("fulldate","tweet")
 l1$day<-str_extract(l1$fulldate, regex("[\\w]{3}\\s[\\w]{3}\\s[\\d]{2}"))#interested to look at the day
 l1$year<-str_extract(l1$fulldate,regex("[\\d]{4}"))
@@ -430,15 +481,18 @@ l1$year<-str_extract(l1$fulldate,regex("[\\d]{4}"))
 
 
 
-#df2 <- data.frame(l1)
+#tokenising function
 words<-tokenize_tweets(l1$tweet)
-#l1 <- cbind(l1,words)
+#count tokens
 word_df<-data.frame(sort(table(unlist(words)),decreasing=TRUE))
 names(word_df)<-c("word","Freq")
 
+#This time we are only tooking at the frequency of hashtags used.
 dfH <- word_df[grepl("#",word_df$word,fixed=TRUE),]
+#Plotting word cloud with some words and 90deg angle
 angle = 90 * sample(c(0, 1), dim(dfH)[1], replace = TRUE, prob = c(60, 40))
 dfH<-cbind(dfH,angle)
+#plotting
 ggplot(dfH[1:20,],
        aes(label=word
            ,color = factor(sample.int(10, 20, replace = TRUE)),size=Freq, angle = angle))+
@@ -449,78 +503,105 @@ ggplot(dfH[1:20,],
 
 
 ```
-This is the 20 most used hashtags, in the 100 thousands tweets of the dataset. #asot400 (and #ASOT400, tokenization is case sensitive) seemed to have been a popular hashtag, similar with #f1.\
 \
-To dive into a bit more so to complete this analysis. I want to uncover what is #asot400.\
+These are the 20 most used hashtags, in the 100 thousands tweets of the dataset. #asot400 (and #ASOT400, tokenization for hashtags is case sensitive) seemed to have been a popular hashtag, similar with #f1.\
+\
+In this next part we will go into more detail and complete this analysis, we will uncover what is #asot400 and in doing so will uncover the true usage and potential application of tokenize tweets.\
 
 ```{r}
-#start by doing a grep search and to find what dates this hashtag was used
+#start by doing a grep search and to find what dates this hash tag was used
 
 asot <- l1[c(grepl("#ASOT400",l1$tweet,fixed=TRUE),grepl("#asot400",l1$tweet,fixed=TRUE)),c("day","year")]
-
+#store the days that #asot was tweeted
 days <- unique(asot[complete.cases(asot),"day"])
+#how many tweets made in those days
 tdays <-length(l1$day[which(l1$day%in%days)])
+
 year <- unique(asot[complete.cases(asot),"year"])
-print(paste("there were",length(asot),"from",tdays,
-            "(about",round((length(days)/tdays)*100,2),"percent)","tweets made on the days:"))
+print(paste("there were",dim(asot)[1],"from",tdays,
+            "(about",round((dim(asot)[1]/tdays)*100,2),"percent)","tweets made on the days:"))
 print(paste(days,year))
 
 
 
 
 ```
-The #asot400 was used on 3 consecutive days in 2009. After a quick Google search, it was found that ASOT stands for "a state of trance" a popular radio show which carried out a 72 hour broadcast from 17th to the 19th as a celebration for its 400th transmissions (https://www.astateoftrance.com/news/asot-400/). This analysis shows that the tweet tokenisation and in this case analysing the hashtags works very similarly to the "Trending" function on Twitter. "Trending" on Twitter analyses all tweets written and groups them into tweets that are "about" the same thing. If there are loads of tweets about the same subject in a small time frame then they appear on the "Trending" tab. In this case for simplicity and to explain the tokenenize_tweet function, it is easy to uncover the most used hashtags and thus find out what is "trending" based on the hashtags used.\
 \
-
-
-### Part 3
-
+The #asot400 was used on 3 consecutive days in 2009.\ 
+After a quick Google search, it was found that ASOT stands for "a state of trance" a popular radio show which carried out a 72 hour broadcast from 17th to the 19th as a celebration for its 400th transmissions (https://www.astateoftrance.com/news/asot-400/). \
+\
+In conclusion the tokenize_tweets function shows that the tweet tokenisation and in this case analysing the hashtags works very similarly to the "Trending" function on Twitter. "Trending" on Twitter analyses all tweets written and groups them into tweets that are "about" the same thing. If there are a large volume of tweets about the same subject in a small time frame then they appear on the "Trending" tab. In this case for simplicity and to explain the tokenenize_tweet function, it was easy to uncover the most used hashtags and find out what is "trending" based on the hashtags used.\
+\
 ```{r}
-df <-read.csv("~/Masters/RProg/News_data/df_2020.csv")
+#Clearing memory
+rm(df0)
+rm(dfc)
+rm(words)
+rm(word_df1)
+rm(word_df2)
+
+```
+
+# Part 3
+
+The third part builds on from the tokenization packages.\
+Tokenization is usually the first step to sentiment analysis. Below is the code that attempts to take a tokenized object and output whether the sentiment is negative, positive or neutral for that tokenized object.\
+The function is simple and has two layers. Firstly it counts up all the positive and negative words that are found in the lexicon that was constructed by Minqing Hu and Bing Liu.\
+A lexicon is a group of words, such as positive words, that have been grouped together in a vector.\
+\
+The next level is that if there is a "not" before the positive or negative word, it count it as the opposite.\
+It is possibly to do this without a for loop because, the input to the sentiment function is the output to the tokenize_ngrams(n=2,n_min=1), which as explained earlier, tokenizes for every word, the word itself and the word plus the word before it, ie. groups at lest one word and at most 2 words.\
+Therefore if "not" + positive word was found in the tokenzed object then it is counted as a negative word.\
+\
+Finally if there are more postive words the function returns 1, which scores a positive sentiment.\
+If there are more negative words the function returns -1, which scores a negative sentiment.\
+If there are equal or none at all it retruns 0, which scores a neutral sentiment.\
+```{r}
+#reading in the lexicons and the citation
 posw <- scan("~/Masters/RProg/lexicon/positive-words.txt",what="character",sep="\n")
 negw <- scan("~/Masters/RProg/lexicon/negative-words.txt",what="character",sep="\n")
-df1<-df[1:100,]
+cit <- scan("~/Masters/RProg/lexicon/citation.txt",what="character",sep="\n")
+print(cit)
+```
 
-test <- c("There has been a fire in the Great Hall, 10 people have died and 15 more seriously injured. It is not safe ppl's lungs with all the smoke. Not good for their health, keep away from the area for your own safety. Luckily 10 are safe and loads are good, loads are good")
+### Sentiment scoring function
 
-#ltok <- tokenize_words(df1$sentence, stopwords = stopwords::stopwords("en"))
-SPltok <- tokenize_words(test, stopwords = stopwords::stopwords("en"))
-ltok <- tokenize_words(test)
-test <- df$sentence[266]
-NGtok <- tokenize_ngrams(df$sentence, n= 2, n_min=1)
-v<-NGtok[[1]]
-
+```{r}
+#not vector
 Not <- c("not")
 
-score <- function(v){
+# function sentiment scoring
+score <- function(v){ #Imoprtant to make sure input is a vector not a list
   #words <- list()
   
   #save pos and neg words in variable
   pw <- v[which(v%in%posw)]
   nw <- v[which(v%in%negw)]
   
-  #What is done to a positve words is done in an oppposite way to negative words
-  #There could be false positive ie, not good, create a "not good" strings
+  
+  #look for the not + postive and not + neg words
   NplusP <- v[which(v%in%paste(Not,pw,sep=" "))]
   PplusN <- v[which(v%in%paste(Not,nw,sep=" "))]
   
-  #are there any double positives if so delete them and add to negative list
   
-  if (length(NplusP)>0){
-    dblNP <-unlist(strsplit(NplusP,split = " "))
-    dblNP <- dblNP[seq(2,length(dblNP),2)]#seq is "not, something, not, something etc"
+  
+  if (length(NplusP)>0){##are there any not +
+    dblNP <-unlist(strsplit(NplusP,split = " "))#split the list, sequence is always the same seebelow
+    dblNP <- dblNP[seq(2,length(dblNP),2)]#seq is "not, something, not, something, etc"
     
+    #This means for every not + word there is the NplusP variable there's is the same word in pw variable
+    #That word in pw is a false positive
+    #This part gets rid of that false positive word
     match <- table(pw[which(pw%in%dblNP )])
     tab <- table(dblNP)
     trueP <- match - tab
     
     pw <- c(pw[which(pw%in%dblNP==FALSE)],
             rep(names(trueP)[which(trueP>0)],trueP[which(trueP>0)]))
-    #pw[which(pw%in%unlist(strsplit(NplusP,split = " ")))]
-    #pw <- pw[- which(pw%in%unlist(strsplit(NplusP,split = " ")))]
     
     nw <- c(nw, v[which(v%in%NplusP)])
   }
+  #Same process repeated for false negatives
   if (length(PplusN)>0){
     dbl <-unlist(strsplit(PplusN,split = " "))
     dbl <- dbl[seq(2,length(dbl),2)]#seq is "not, something, not, something etc"
@@ -533,13 +614,15 @@ score <- function(v){
     nw <- c(nw[which(nw%in%dbl==FALSE)],
             rep(names(trueN)[which(trueN>0)],trueN[which(trueN>0)]))
     
-    #nw <- nw[- which(nw%in%unlist(strsplit(PplusN,split = " ")))]
+   
     pw <- c(pw, v[which(v%in%PplusN)])
   }
   
+  #How many  pos and neg words
   num_pw <- length(pw)
   num_nw <- length(nw)
   
+  #Scoring, subtraction to see which theres most
   if (num_pw-num_nw >0){
     score <- 1
   }else if (num_pw-num_nw < 0){
@@ -549,47 +632,73 @@ score <- function(v){
   }
   
   
-  result <- list("pos"=pw,"neg"=nw,"score"=score)
-  class(result) <- c("sentiment","summary")
+  result <- c("score"=score,"diff" = num_pw-num_nw)
   
-  return(result)
+  
+  class(result) <- c("sentiment","explain")
+  all <- list(result,pw,nw)
+  class(all)<-"explain"
+  
+  # classes for summary, prints and plots
+  
+  return(all)
+  #return the result which contains, scoring(-1,-0,1) 
+  #and diff (number of pos words - number of neg words)
+  #Also returns the lits of positive words and negative words for that tokenized object
 }
 
 
-score.sentiment <- function(lst){
-  return(score(lst)["score"])
-}
-score.summary <- function(lst){
-  return(score(lst))
+score.sentiment <- function(lst){#simply returns only the score -1,0,1
+  return(score(lst)[[1]]["score"])
 }
 
-print.sentiment <- function(lst){
-  if(lst["score"] ==1){
+print.explain <- function(lst){#prints a bit more detailed summary of the output
+  if(lst[[1]]["score"] == 1){
     word <- "positive"
-  }else if(lst["score"] ==-1){
+  }else if(lst[[1]]["score"] == -1){
     word <- "negative"
   }else{
     word <- "neutral"
   }
-  cat("The sentiment for this text is ", word)
+  cat("The sentiment is ", word,"\n")
+  
+  if(length(lst[[2]])!=0){
+    cat("The list of positive words are :","\n",
+        lst[[2]],"\n")
+    
+  }else{
+    cat("There are no positive words","\n")
+  }
+  if(length(lst[[3]])!=0){
+    cat("The list of negative words are :","\n",
+        lst[[3]])
+  }else{
+       cat("There are no negative words","\n")
+  }
 }
-
-print(score(NGtok[[90]]))
 
 
 
 ```
 
 
+### Summary function 
+A summary function is created below.\
+This takes a data.frame as input. However in the data.frame it must contain a "year" variable and a score(-1,-0,1) variable (ie. the output to the sentiment scoring function)
+
 
 ```{r}
-NGtok <- tokenize_ngrams(df$sentence, n= 2, n_min=1)
-df$score <- unlist(sapply(NGtok,score.sentiment))
-class(df) <- "news"
+#NGtok <- tokenize_ngrams(df$sentence, n= 2, n_min=1)
+#$score <- unlist(sapply(NGtok,score.sentiment))
+#class(df) <- "news"
 
 summary.news <- function(df){
-  year <- unique(df$year)
-  scores <- df$score[which(df$score!=0)]
+  if(length(unique(df$year))==1){
+    year <- unique(df$year)
+  }else{
+    year <- paste(unique(df$year)[1],"to",unique(df$year)[length(unique(df$year))])
+  }
+  scores <- df$score
   avg <- mean(scores)
   std <- sd(scores)
   Npos <- length(scores[which(scores>0)])
@@ -599,6 +708,7 @@ summary.news <- function(df){
   cat("In ",year,"there was :","\n", 
       Npos, "positive stories","\n",
       Nneg, "negative stories", "\n",
+      Nneut, "neutral stories", "\n",
       "Mean sentiment score of:", avg, "\n",
       "Standard deviation of ", std,"\n",
       "----------------------","\n")
@@ -613,14 +723,23 @@ summary.news <- function(df){
   
 }
 
-summary(df)
+#summary(df)
 
 
 ```
 
+
+### Plotting function
+A plotting function that better helps visuals the amount of positive and negative news/articles/text in a data.frame.\
+Same input as the summary function above.
 ```{r}
 plot.news <- function(df){
-  year <- unique(df$year)
+  if(length(unique(df$year))==1){
+    year <- unique(df$year)
+  }else{
+    year <- paste(unique(df$year)[1],"to",unique(df$year)[length(unique(df$year))])
+  }
+  tab <- table(df$score)
   st <- sum(tab)
   for (i in 1:3){
     tab[i] <- round((tab[i]/st)*100,2)
@@ -635,121 +754,230 @@ plot.news <- function(df){
   
 }
 
-plot(df)
+```
+
+### What Data will be Analysed?
+\
+The data was taken from kaggle, link is https://www.kaggle.com/tumanovalexander/nyt-articles-data.\
+This data set contains articles of various lengths from the New York Times (NYT). It ranges from 1920 to 2020, (only 1960 to 2020 will be used for this Analysis).\
+It has two cloumns, year and artcile.\
+\
+
+### Aim of the Anlysis
+\
+The aim of the analysis, is to use the sentiment scoring function on the Articles published in the NYT. This will mean for each article for every year a score of -1,0,1 will be given. Next we will average out the positive and negative scores for each article in year and give an overal sentiment score for that year.
+\
+The next part is to analyse whether the sentiment function works or not. \
+One could read the articles and assign a sentiment score by hand and compare results to the function's output. This would be the most effective way but it would be very time consuming as well so another approach will be conducted, whereby the sentiment score will be compared with another metric call the consumer confidence index (CII).\
+
+### Reading in Data
+The data was put in separate csv files according to each year. The easiest way to concatenate them would be to do it outside R. Using a cat command found on most bash terminals. It saves having to read them all in to R and rbind them.
+```{sh}
+cat ~/Masters/RProg/News_data/data/*.csv > ~/Masters/RProg/News_data/data/data.csv
 
 ```
 
-```{sh}
-cat ~/Masters/RProg/News_data/test/*.csv > ~/Masters/RProg/News_data/test/test2.csv
+
+```{r}
+df <- read.csv("~/Masters/RProg/News_data/data/data.csv")
+df <- df[complete.cases(df),]
+dim(df)
+names(df)
+```
+This dataset contains 8926419 rows and 3 columns. The column "sentence" contains a few sentences on an article published in the NWT. "X" columns are just indices and "year" column contains the year that article was published.
+
+```{r}
+#how many articles in 2010
+print(length(df$year[which(df$year=="2010",)]))
+
+```
+For example this dataset contains `r `length(df$year[which(df$year=="2010",)]` articles from 2010.
+
+```{r}
+print(paste("The mean articles published per year is:",round(mean(table(df$year)),2),"with a standard deviation of", round(sd(table(df$year)),2)))
+```
+We can see straight away that this data set has a big enough variance and this might lead to seom inaccuarcies.
+```{r}
+print(paste("the years being studied for this analysis are",unique(df$year)[1],"through to 2020"))
 ```
 
 ```{r}
+#frequency of Articles per year 
+tab <- table(df$year)
+mn <- min(table(df$year))
+
+print(paste("in the year",labels(tab[which(tab==mn)]), "there was", mn, "recorded articles in the dataset"))
+
+
+
+```
+1979 is very under represented, in comparison to do the rest of the years (explained by the big standard deviation number of the data set). It may also lead to inaccuracies.\
+
+### Sentiment scoring for each year
+Because the dataset is so big, the sentiment function will be applied using a parallel process. This allows more than one CPU core to be used for the process and thus will be much quicker.
+\
+```{r}
+#parrellel function
 library(doParallel)
 library(foreach)
-df <- read.csv("~/Masters/RProg/News_data/test/test2.csv")
-# Use the detectCores() function to find the number of cores in system
-#no_cores <- detectCores()
-# Setup cluster
-#clust <- makeCluster(no_cores) #This line will take time
-#Setting a base variable 
-#base <- 4
-#Note that this line is required so that all cores in cluster have this variable available
-#clusterExport(clust, "base")
+```
+
+
+
+```{r}
+
 cores <- detectCores()
-cl <- makeCluster(2)#cores[1]/2) #not to overload your computer, cores = 8
+
+cl <- makeCluster(6)#ores[1]/2)#cores[1]/2) #not to overload your computer, cores = 8
 registerDoParallel(cl)
-#registerDoParallel(makeCluster(no_cores))
-sz <- length(df$sentence)
-#function that combines the tokenization and the sentiment scoring function
-parr <- function(text){
-  NGtok <- tokenize_ngrams(df$sentence, n= 2, n_min=1)
-  return(unlist(sapply(NGtok,score.sentiment)))
+
+
+
+#combined the functions tokenezisation and score sentiment into the one
+parr2 <- function(txt){
+  NGtok <- unlist(tokenize_ngrams(txt, n= 2, n_min=1))
+  return(score.sentiment(NGtok))
 }
-#df <-read.csv("~/Masters/RProg/News_data/test/test2.csv")
-sz <- length(df$sentence)
-mx <- foreach(i = seq(1,sz,sz/3), .combine = rbind)  %dopar%  
-  parr(df$sentence[i:i+1])
-s<-Sys.time()
 
-NGtok <- tokenize_ngrams(df$sentence, n= 2, n_min=1)
-df$score <- unlist(sapply(NGtok,score.sentiment))
-e<-Sys.time()
 
-t1<-s-e #it takes 16.5 min to do 10 years
+clusterExport(cl, varlist = c('score','posw','negw','Not','score.sentiment','parr2','tokenize_ngrams',"unlist"))
 
+s <- Sys.time()
+df$score <- unlist(parSapply(cl,X = df$sentence,parr2))
+df<- df[complete.cases(data.frame(df)),] # a variable "year" gets added to the year column, it has NAs along its rows
+e <- Sys.time()
+
+t <- round(e-s,2)
+print(paste("It took",t,"min","to run the tokenization function and the sentiment scoring function on a data set with",dim(df)[1],"rows","using",6,"cores"))
+
+#Giving it a class for my plot function
+#class(df) <- "news"
 #Scoring the none neutral
-df0 <- df[which(df$score!=0),]
-df1 <- df[which(df$score==0),]
+#df <- df[which(df$score!=0),]
+#df1 <- df[which(df$score==0),]
 
 #percentage differnce of positive to negative news, ie, -10% = 10% more bad news
 pdiff <- function(x){
   return(round(mean(x)*100,2))
 }
-dfs <- aggregate(x= df$score, list(Year = df$year), pdiff)
+#By excluding the neutral news and getting the mean of positive to negative mean, effectively you're just get the percentage difference
+dfs <- aggregate(x= df[which(df$score!=0),"score"], list(Year = df[which(df$score!=0),"year"]), pdiff)
+dfs <- aggregate(x= df[,"score"], list(Year = df[,"year"]), pdiff)
+names(dfs) <- c("Year","MSC")
 
-ggplot(dfs, aes(x = Year, y = x))+
-       geom_bar(stat="identity")
+ggplot(dfs, aes(x = Year, y = MSC))+
+       geom_bar(stat="identity")+
+  theme(axis.text.x = element_text(angle = 90))+
+  ggtitle("Yearly Sentiment Scores")
 
 ```
+\
+It seems that 1987 to 1990, are proportionally very positive in comparison to the other years. Reason is unknown and will be hard to deduce as there is so much data.\
+However, it seems to be accurate for 2020, as it has the most negative score in the last 2 decades. Which would make sense because of the pandemic.
+
+
+
+```{r}
+#Show off plot and summary  function
+df1987 <- df[which(df$year=="1987"),]
+class(df1987) <- "news"
+summary(df1987)
+plot(df1987)
+rm(df1987)
+
+```
+
+
+```{r}
+#show off print function
+set.seed(1)
+ind <- runif(1)
+
+df1987 <- df[which(df$year=="1987"&df$score == 1),]
+sent <- df1987$sentence[ceiling(ind*length(df1987$sentence))]
+sent <- tokenize_ngrams(sent,n =2,n_min=1)
+print(df1987$sentence[ceiling(ind*length(df1987$sentence))])
+print("--------")
+print(score(sent[[1]]))#print.explain
+
+
+```
+
+To get a better understanding of the sentiment score result and to uncover whether it is truly accurate. The mean sentiment score (MSC) for each year will be plotted against the Consumer Confidence Index in America. This is an index that is based off a survey, asking question on economic stability but also their confidence on the economy as a whole. https://data.oecd.org/leadind/consumer-confidence-index-cci.htm\
+\
 
 ```{r}
 #load in consumer confidence index
 
 dfc <- read.csv("DP_LIVE_12122021173345665.csv")
 dfc <- dfc[which(dfc$LOCATION=="USA"),c("TIME","Value")]
-dfc$year <- gsub("-\\d+","",dfc$TIME)
+dfc$year <- gsub("-\\d+","",dfc$TIME)#create a column onfor the year
 
-#gets the change in sentiment score from 1 year to the next
-diffr <- function(v){
-  return(range(v)[1]-range(v)[2])
-}
-diffm <- function(v){
-  return(v[length(v)]-v[1])
-}
 
-v <- dfc[dfc$year=="2020","Value"]
-range(t)
-#dfcs <- aggregate(x= dfc$Value, list(Year = dfc$year), sd)
+
 dfm <- aggregate(x= dfc$Value, list(Year = dfc$year), mean)
-dfr <- aggregate(x= dfc$Value, list(Year = dfc$year), diffr)
-
-dfm10<-dfm[51:61,]
-dfr<-dfr[51:61,]
-ggplot(dfs[51:61,], aes(x = Year, y = x))+
-       geom_bar(stat="identity")
-dfplot <- cbind(dfm10[,"x"],dfs[2:12,])
-names(dfplot) <- c("CII","Year","MSC")
-dfplotr <- cbind(dfr[,"x"],dfs[2:12,])
-names(dfplotr) <- c("CII","Year","MSC")
+names(dfm)<-c("Year","CII")
 
 
-LtoM <-colorRampPalette(c('red', 'yellow' ))
-Mid <- "snow3"
-MtoH <-colorRampPalette(c('lightgreen', 'darkgreen'))
+dfplot <- merge(dfs,dfm,by="Year")#combine CII and MSC
 
 
 p1<-ggplot(dfplot, aes(x=Year,group=1,fill=MSC))+ #group=1 needed otherwise geom_line wont work
   geom_bar(aes(y=MSC),stat="identity")+
-  #scale_fill_gradient(aes(y=MSC),low="blue", high="red")+#aes(fill=MSC),low=LtoM(100), mid='snow3', 
-       #high=MtoH(100), space='Lab')+
-  #scale_fill_gradientn(values = MSC,)
-  scale_fill_gradient(low="red", high="pink",guide = NULL)+
-  geom_line(aes(y=CII-100),color = "darkblue")+
+  
+  scale_fill_gradient(low="red", high="pink")+
+  geom_line(aes(y=CII-100),color = "darkblue")+#-100 so that the graphs align and according the website 100 represents neutral CII and is the mean CII
   scale_y_continuous(
     name = "Mean News Sentiment Score",
     sec.axis = sec_axis(~ ./3, name = "Mean Consumer Confidence Index"))+
+    theme(axis.text.x = element_text(angle = 90)) +
+    labs(color = "Legend")+
   ggtitle("Mean SC vs Mean CCI")
     
   
-p2<-ggplot(dfplotr, aes(x=Year,group=1,fill=MSC))+ #group=1 needed otherwise geom_line wont work
-  geom_bar(aes(y=MSC),stat="identity")+
-  scale_fill_gradient(low="red", high="pink",guide = NULL)+
-  geom_line(aes(y=CII),color = "darkblue")+
-  scale_y_continuous(
-    name = "Mean News Sentiment Score",
-    sec.axis = sec_axis(~ ./3, name = "Range difference of Consumer Confidence Index"))+
-  ggtitle("Mean SC vs Range of CII")
-grid.arrange(p1,p2,ncol=2)
+p1
 
 ```
+\
+There seems to be some correlation between the two but it is hard to know if the correlation is random or not.\
+For example, the CII is positive in most cases when the Mean Sentiment Score (MSC) is positive as well or when the MSC is relatively quite low.
+This hold true for years 1987-1989, even though thise 3 years are disproportionately positive, the CII is also positive.\
+Moreover a sharp decrease in MSC is often followed by a decrease in CII. For example, in 2020, the CII isn't significantly lower compared to previous years, however the CII decreases sharply downward from decade all time high CII score.\ 
+Lastly, the trend isn't so strong in the 1960s with high CII scores and low MSC.
+
+
+In order to more accurately determine the relationship between the two, ie CII and MSC, 2 linear regressions will be conducted. One with all the data and the second the years 1987 to 1990, will be treated as outliers and omitted from the analysis.
+
+
+```{r}
+years <- c("1987","1988","1989","1990")
+
+ggplot(dfplot, aes(x=MSC,y=CII))+
+  geom_point(color = "purple") + 
+  geom_smooth(method="lm", se=F)+
+  labs(title = "MSC vs CII")
+print(paste("coefficient of determination is", summary(lm(MSC~CII,data=dfplot))$r.squared))
+
+
+ggplot(dfplot[which(dfplot$Year%in%years==FALSE),], aes(x=MSC,y=CII))+
+  geom_point(color = "purple") + 
+  geom_smooth(method="lm", se=F)+
+  labs(title = "MSC vs CII, without 1987-1990")
+print(paste("coefficient of determination is", summary(lm(MSC~CII,data=dfplot[which(dfplot$Year%in%years==FALSE),]))$r.squared,"when excluding 1987-1990"))
+
+```
+
+When conducting a linear regression the association seems to be stronger if you treat 1987-1990 as outliers.\
+However once this was done the association remained weak.\
+
+The question now lies whether CII is a good representation for sentiment analysis when looking at the general news as a whole?\
+For example CII looks at the economic confident and stability of consumers, now of course that depends on the news but more so economic , political news and foreign affairs, less so on sports news. This is common knowledge.\
+Whether the news data set contains accurate random selection sampling of news articles for every year?\
+This is only preliminary analysis on the function being used, there are no hard evidence to say that it doesn't work.\
+If there was a follow on analysis, a few data cleaning steps will have to be conducted first. Which would include filtering only economical, political news and foreign affairs. Then randomly choosing a pre determine number of articles from each year and making sure that they all have at least 2 sentences and at most 5. Then repeat the same procedure as before.\
+\
+Thank you for giving me the chance to present to you my project.
+
+
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+e
